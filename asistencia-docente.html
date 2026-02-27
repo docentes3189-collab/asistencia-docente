@@ -893,8 +893,7 @@ async function generarReporte(){
 function exportarCSV(){
   if(!_repData.length){alert('Primero generá el reporte.');return;}
   const m=document.getElementById('repMes').value,a=document.getElementById('repAnio').value;
-  let csv='Docente,Materia,División,Total,Presentes,Ausentes,Tarde,%
-';
+  let csv='Docente,Materia,División,Total,Presentes,Ausentes,Tarde,%\n';
   _repData.forEach(r=>{csv+=`${r.docente},${r.materia},${r.division},${r.total},${r.presente},${r.ausente},${r.tarde},${r.porcentaje}%
 `;});
   const el=document.createElement('a');
