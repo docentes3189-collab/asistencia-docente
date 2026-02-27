@@ -442,16 +442,38 @@ const ROLES_CARGA=['Preceptor','Director','Vicedirectora','Secretario','Represen
 // ═══════════════════════════════════
 // API — usa GET para evitar CORS
 // ═══════════════════════════════════
-async function api(fn, params={}) {
-  const payload = {fn, usuarioObj:usuario, ...params};
+async function apiGET(fn, payload) {
   const url = APPS_SCRIPT_URL+'?fn='+encodeURIComponent(fn)+'&data='+encodeURIComponent(JSON.stringify(payload));
   const res  = await fetch(url, {redirect:'follow'});
   const text = await res.text();
   let data;
   try { data=JSON.parse(text); }
-  catch(e) { throw new Error('Error de conexión. Intentá de nuevo.'); }
+  catch(e) { throw new Error('Error de conexion. Intenta de nuevo.'); }
   if (data.error) throw new Error(data.error);
   return data.result;
+}
+
+async function api(fn, params={}) {
+  const payload = {fn, usuarioObj:usuario, ...params};
+  // Si hay foto, separar en dos llamadas: primero registrar sin foto, luego enviar foto
+  if (fn === 'registrarInasistenciaPropia' && payload.datos && payload.datos.fotoBase64) {
+    const foto = payload.datos.fotoBase64;
+    payload.datos.fotoBase64 = null;
+    const res = await apiGET(fn, payload);
+    if (foto && res.bloquesAfectados > 0) {
+      try {
+        await apiGET('enviarFotoCertificado', {
+          fn: 'enviarFotoCertificado',
+          usuarioObj: usuario,
+          foto: foto,
+          nombre: usuario.nombre,
+          fecha: payload.datos.fechaAusencia
+        });
+      } catch(e) { res._sinFoto = true; }
+    }
+    return res;
+  }
+  return await apiGET(fn, payload);
 }
 
 // ═══════════════════════════════════
