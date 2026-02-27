@@ -281,7 +281,7 @@
   <nav class="tnav">
     <button class="tbtn active" id="tab-btn-hoy" onclick="showTab('hoy',this)">📋 Cargar Asistencia</button>
     <button class="tbtn" id="tab-btn-miausencia" onclick="showTab('miausencia',this)">📝 Mi Ausencia</button>
-    <button class="tbtn" id="tab-btn-historial" onclick="showTab('historial',this)">🔍 Historial</button>
+    <button class="tbtn" id="tab-btn-historial" onclick="showTab('historial',this)">🔍 Inasistencias</button>
     <button class="tbtn admin-only" id="tab-btn-reporte" onclick="showTab('reporte',this)">📊 Reporte</button>
     <button class="tbtn admin-only" id="tab-btn-docente" onclick="showTab('docente',this)">👤 Por Docente</button>
   </nav>
@@ -341,7 +341,7 @@
     <!-- TAB: HISTORIAL -->
     <div id="tab-historial" class="tp">
       <div class="card">
-        <div class="ctit">🔍 Historial de asistencia</div>
+        <div class="ctit">🔍 Inasistencias de Inasistencias</div>
         <div class="frow">
           <div class="fg"><label>Docente / Personal</label>
             <input type="text" id="histDoc" placeholder="Apellido" list="dlD">
@@ -473,6 +473,19 @@
         <div class="warn-box">
           <p>⏰ <strong>Plazo:</strong> presentar en la institución dentro de las <strong>48 horas</strong> de acontecida la licencia.</p>
         </div>
+        <div id="fotoBox" style="display:none;margin-top:14px">
+          <span class="slbl">📎 Adjuntar foto del certificado (opcional)</span>
+          <div style="margin-top:8px">
+            <label style="display:inline-flex;align-items:center;gap:8px;background:var(--vf);border:2px dashed var(--vm);border-radius:10px;padding:12px 18px;cursor:pointer;font-size:.88em;color:var(--vd);font-weight:600">
+              📷 Seleccionar foto
+              <input type="file" id="fotoCert" accept="image/*" capture="environment" style="display:none" onchange="previsualizarFoto(this)">
+            </label>
+          </div>
+          <div id="fotoPreview" style="margin-top:10px;display:none">
+            <img id="fotoImg" style="max-width:100%;max-height:200px;border-radius:10px;border:2px solid var(--vc)">
+            <button onclick="borrarFoto()" style="display:block;margin-top:6px;font-size:.78em;color:#C62828;background:none;border:none;cursor:pointer">✕ Quitar foto</button>
+          </div>
+        </div>
         <div class="bact">
           <button class="btn bout" onclick="wBack(2)">← Volver</button>
           <button class="btn bpri" id="btnSig2" onclick="wNext(2)" disabled>Continuar →</button>
@@ -518,7 +531,7 @@
 // ═══════════════════════════════════════
 let usuario = null;
 let clasesHoy = [], clasesVis = [];
-let wMotivo = null, wCert = null;
+let wMotivo = null, wCert = null, wFotoBase64 = null;
 let _repData = [];
 const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio',
                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -687,7 +700,15 @@ function renderTabla() {
           ).join('')}
         </div>
         <div class="rwrap" id="rw-${i}">
-          <input type="text" placeholder="Nombre del reemplazante" id="reempl-${i}" list="dlD">
+          <input type="text" placeholder="Nombre del reemplazante" id="reempl-${i}" list="dlD" style="margin-bottom:6px">
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <label style="font-size:.8em;font-weight:600;color:#546E7A;display:flex;align-items:center;gap:4px;cursor:pointer">
+              <input type="radio" name="abono-${i}" value="Abona escuela"> Abona escuela
+            </label>
+            <label style="font-size:.8em;font-weight:600;color:#546E7A;display:flex;align-items:center;gap:4px;cursor:pointer">
+              <input type="radio" name="abono-${i}" value="Mecanizada"> Mecanizada
+            </label>
+          </div>
         </div>
         <input type="text" class="oi" placeholder="Observaciones (opcional)" id="obs-${i}">
       </td></tr>`;
@@ -742,6 +763,7 @@ async function guardarAsistencia() {
     dia:c.dia, horario:c.horario, turno:c.turno, division:c.division,
     materia:c.materia, docente:c.docente, estado:c._estado||'Sin datos',
     reemplazante:c._estado==='Reemplazante'?(document.getElementById('reempl-'+i)?.value||''):'',
+    abono:c._estado==='Reemplazante'?(document.querySelector(`input[name="abono-${i}"]:checked`)?.value||''):'',
     observaciones:document.getElementById('obs-'+i)?.value||''
   }));
   if (!regs.length) { setAlerta('No hay registros.','aw'); return; }
@@ -768,6 +790,10 @@ function abrirWizard() {
   document.querySelectorAll('input[name="motivo"]').forEach(r=>r.checked=false);
   document.getElementById('wObs').value='';
   document.getElementById('btnSig2').disabled=true;
+  wFotoBase64=null;
+  if(document.getElementById('fotoCert')) document.getElementById('fotoCert').value='';
+  if(document.getElementById('fotoPreview')) document.getElementById('fotoPreview').style.display='none';
+  if(document.getElementById('fotoBox')) document.getElementById('fotoBox').style.display='none';
   const hoy=new Date(); document.getElementById('wFecha').value=hoy.toISOString().split('T')[0];
   document.getElementById('wizardOverlay').classList.add('show');
 }
@@ -787,6 +813,26 @@ function selCert(val) {
   document.getElementById('ccSi').className='ccard'+(val===true?' sel-si':'');
   document.getElementById('ccNo').className='ccard'+(val===false?' sel-no':'');
   document.getElementById('btnSig2').disabled=false;
+  document.getElementById('fotoBox').style.display = val===true ? 'block' : 'none';
+  if (val===false) borrarFoto();
+}
+
+function previsualizarFoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('fotoImg').src = e.target.result;
+    document.getElementById('fotoPreview').style.display = 'block';
+    wFotoBase64 = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function borrarFoto() {
+  document.getElementById('fotoCert').value = '';
+  document.getElementById('fotoPreview').style.display = 'none';
+  document.getElementById('fotoImg').src = '';
+  wFotoBase64 = null;
 }
 
 function wNext(step) {
@@ -863,7 +909,7 @@ async function confirmarAusencia() {
   btn.disabled=true; btn.textContent='⏳ Enviando...';
   try {
     const res = await api('registrarInasistenciaPropia', {
-      datos:{fechaAusencia:fechaStr,motivo:wMotivo,tieneCertificado:wCert,observaciones:document.getElementById('wObs').value}
+      datos:{fechaAusencia:fechaStr,motivo:wMotivo,tieneCertificado:wCert,observaciones:document.getElementById('wObs').value,fotoBase64:wFotoBase64}
     });
     goStep(4);
     document.getElementById('wExitoMsg').innerHTML=
@@ -912,16 +958,31 @@ async function buscarHistorial() {
   } catch(e) { document.getElementById('histZ').innerHTML=`<div class="al aer">❌ ${e.message}</div>`; }
 }
 
+function fmtFecha(f) {
+  if (!f) return '—';
+  const s = String(f);
+  // Already dd/MM/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+  // ISO format: 2026-02-27T...
+  if (s.includes('T') || s.includes('-')) {
+    const d = new Date(s);
+    if (!isNaN(d)) return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+  return s;
+}
+
 function renderTablaH(cid, data) {
   if (!data.length) { document.getElementById(cid).innerHTML='<p style="color:#90A4AE;font-style:italic">Sin resultados.</p>'; return; }
   let h=`<div class="wt"><table class="tr2"><thead><tr>
     <th>Fecha</th><th>Día</th><th>Horario</th><th>División</th><th>Materia</th>
-    <th>Estado</th><th>Motivo</th><th>Certificado</th>
+    <th>Estado</th><th>Reemplazante</th><th>Abono</th><th>Motivo</th><th>Certificado</th>
   </tr></thead><tbody>`;
   data.forEach(r=>{
     const ic={Presente:'✅',Ausente:'❌',Tarde:'⚠️',Reemplazante:'🔄'}[r.estado]||'';
-    h+=`<tr><td>${r.fecha}</td><td>${r.dia}</td><td>${r.horario}</td><td>${r.division}</td>
+    h+=`<tr><td>${fmtFecha(r.fecha)}</td><td>${r.dia}</td><td>${r.horario}</td><td>${r.division}</td>
       <td>${r.materia}</td><td>${ic} ${r.estado}</td>
+      <td style="font-size:.82em">${r.reemplazante||'—'}</td>
+      <td style="font-size:.82em">${r.abono||'—'}</td>
       <td style="font-size:.82em">${r.motivo||'—'}</td>
       <td style="font-size:.82em">${r.certificado||'—'}</td></tr>`;
   });
