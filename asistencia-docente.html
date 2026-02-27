@@ -690,7 +690,7 @@ async function guardarAsistencia(){
   btn.disabled=true;btn.textContent='⏳ Guardando...';
   try{
     const r=await api('guardarAsistencia',{registros:regs});
-    setAlerta(`✅ Guardado: ${r.guardados} registros.${r.ausentes>0?' 📧 Email enviado.':''},'aok');
+    setAlerta(`✅ Guardado: ${r.guardados} registros.${r.ausentes>0?' 📧 Email enviado.':''}`,'aok');
   }catch(e){setAlerta('❌ '+e.message,'aer');}
   btn.disabled=false;btn.textContent='💾 Guardar';
 }
