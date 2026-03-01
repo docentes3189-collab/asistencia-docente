@@ -849,7 +849,15 @@ async function confirmarAusencia(){
       } else { throw e1; }
     }
     goStep(4);
-    const avisoFoto=res._sinFoto?'<br><br>⚠️ La foto era muy pesada y no se adjuntó. Presentá el certificado en Secretaría.':'';
+    // Enviar foto en llamada separada (ya comprimida a ~5KB)
+    if (wFotoBase64) {
+      try {
+        await api('guardarFotoCertificado', {
+          ausenciaId: String(Date.now()),
+          foto: wFotoBase64
+        });
+      } catch(ef) { console.log('Foto:', ef.message); }
+    }
     document.getElementById('wExitoMsg').innerHTML=
       `Tu inasistencia del <strong>${fechaStr}</strong> fue registrada.<br>
        <strong>${res.bloquesAfectados} bloque(s)</strong> marcados como ausente.<br><br>
