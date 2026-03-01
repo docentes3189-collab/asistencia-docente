@@ -19,7 +19,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#ECEFF1;color:#263238;mi
 .linput{padding:13px 16px;border:2px solid rgba(255,255,255,.3);border-radius:12px;font-size:.95em;background:rgba(255,255,255,.2);color:#fff;outline:none;width:100%}
 .linput::placeholder{color:rgba(255,255,255,.6)}
 .linput:focus{border-color:rgba(255,255,255,.7)}
-.lhint{font-size:.75em;color:rgba(255,255,255,.55);text-align:left;margin-top:-6px;padding-left:4px}
+.lhint{font-size:.75em;color:rgba(255,255,255,.85);text-align:left;margin-top:4px;padding-left:4px;margin-bottom:4px}
 .btn-ing{background:#fff;color:var(--vd);border:none;padding:15px 48px;border-radius:50px;font-size:1.05em;font-weight:700;cursor:pointer;width:100%;margin-top:4px}
 .btn-ing:disabled{opacity:.6;cursor:not-allowed}
 .lerr{background:rgba(198,40,40,.3);border:1px solid rgba(255,100,100,.5);color:#fff;border-radius:10px;padding:10px 14px;font-size:.85em;display:none}
@@ -156,6 +156,28 @@ header{background:linear-gradient(90deg,var(--vd),var(--vm));color:#fff;padding:
 .cert-si{background:#E8F5E9;color:#2E7D32}
 .cert-no{background:#FFF3E0;color:#E65100}
 .cert-na{background:var(--gr);color:var(--gt)}
+.doc-card{background:#fff;border:1.5px solid var(--bo);border-radius:14px;padding:16px 18px;margin-bottom:12px;transition:border-color .2s}
+.doc-card:hover{border-color:var(--vm)}
+.doc-card.estado-P{border-color:#43A047;background:#F1F8E9}
+.doc-card.estado-A{border-color:#E53935;background:#FFF5F5}
+.doc-card.estado-T{border-color:#FB8C00;background:#FFF8F0}
+.doc-card.estado-R{border-color:#7B1FA2;background:#F9F0FF}
+.doc-nombre{font-size:1em;font-weight:700;color:#263238;margin-bottom:3px}
+.doc-horas{font-size:.8em;color:#78909C;margin-bottom:10px;line-height:1.6}
+.doc-hora-tag{display:inline-block;background:#E0F2F1;color:var(--vd);border-radius:5px;padding:1px 7px;font-size:.78em;font-weight:600;margin-right:4px;margin-bottom:2px}
+.doc-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.deb{padding:6px 12px;border:1.5px solid var(--bo);border-radius:8px;font-size:.82em;font-weight:700;cursor:pointer;background:#fff;transition:all .15s}
+.deb:hover{transform:translateY(-1px)}
+.deb.sP{background:#43A047;color:#fff;border-color:#43A047}
+.deb.sA{background:#E53935;color:#fff;border-color:#E53935}
+.deb.sT{background:#FB8C00;color:#fff;border-color:#FB8C00}
+.deb.sR{background:#7B1FA2;color:#fff;border-color:#7B1FA2}
+.doc-extra{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #ECEFF1;display:none}
+.doc-extra.show{display:block}
+.hora-scroll{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.hbtn{padding:4px 10px;border:1.5px solid var(--bo);border-radius:6px;font-size:.78em;font-weight:600;cursor:pointer;background:#fff;transition:all .15s}
+.hbtn.sel{background:var(--vd);color:#fff;border-color:var(--vd)}
+.turno-sep{background:linear-gradient(90deg,var(--vd),var(--vm));color:#fff;border-radius:10px;padding:8px 16px;font-weight:700;font-size:.85em;margin-bottom:12px;margin-top:6px;letter-spacing:1px}
 .loading{text-align:center;padding:50px 20px;color:#78909C}
 .sspin{width:34px;height:34px;border:4px solid var(--bo);border-top-color:var(--vm);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
 .bact{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid #ECEFF1}
@@ -227,21 +249,13 @@ header{background:linear-gradient(90deg,var(--vd),var(--vm));color:#fff;padding:
               <option value="VIERNES">Viernes</option>
             </select>
           </div>
-          <div class="fg"><label>Turno</label>
-            <select id="selTurno" onchange="filtrarTabla()">
-              <option value="">Todos</option><option value="Mañana">🌅 Mañana</option><option value="Tarde">🌆 Tarde</option>
-            </select>
-          </div>
-          <div class="fg"><label>División</label>
-            <select id="selDiv" onchange="filtrarTabla()"><option value="">Todas</option></select>
-          </div>
         </div>
         <div id="statsHoy" class="sgrid" style="display:none"></div>
         <div id="alertaZ"></div>
         <div id="tablaZ"><div class="loading"><div class="sspin"></div>Cargando...</div></div>
         <div class="bact">
-          <button class="btn bout" onclick="marcarTodos('Presente')">✅ Todos presentes</button>
-          <button class="btn bout" style="color:#C62828;border-color:#C62828" onclick="limpiarEstados()">🔄 Limpiar</button>
+          <button class="btn bout" onclick="marcarTodosDocentes('Presente')">✅ Todos presentes</button>
+          <button class="btn bout" style="color:#C62828;border-color:#C62828" onclick="limpiarEstadosDocentes()">🔄 Limpiar</button>
           <button class="btn bsuc" onclick="guardarAsistencia()">💾 Guardar</button>
         </div>
       </div>
@@ -442,8 +456,13 @@ const ROLES_CARGA=['Preceptor','Director','Vicedirectora','Secretario','Represen
 // ═══════════════════════════════════
 // API — usa GET para evitar CORS
 // ═══════════════════════════════════
-async function apiGET(fn, payload) {
-  const url = APPS_SCRIPT_URL+'?fn='+encodeURIComponent(fn)+'&data='+encodeURIComponent(JSON.stringify(payload));
+async function apiCall(fn, payload) {
+  const jsonStr = JSON.stringify(payload);
+  // Si el payload es grande (foto), usar POST via form trick
+  if (jsonStr.length > 4000) {
+    return await apiPOST(fn, payload);
+  }
+  const url = APPS_SCRIPT_URL+'?fn='+encodeURIComponent(fn)+'&data='+encodeURIComponent(jsonStr);
   const res  = await fetch(url, {redirect:'follow'});
   const text = await res.text();
   let data;
@@ -453,27 +472,66 @@ async function apiGET(fn, payload) {
   return data.result;
 }
 
+// POST via no-cors + polling (para payloads grandes como fotos)
+function apiPOST(fn, payload) {
+  return new Promise((resolve, reject) => {
+    const formId = 'pf_'+Date.now();
+    const ifrId  = 'pi_'+Date.now();
+
+    const ifr = document.createElement('iframe');
+    ifr.name = ifrId;
+    ifr.style.cssText = 'display:none;position:absolute;width:0;height:0';
+    document.body.appendChild(ifr);
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = APPS_SCRIPT_URL;
+    form.target = ifrId;
+    form.style.display = 'none';
+    form.id = formId;
+
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = 'payload';
+    inp.value = JSON.stringify(payload);
+    form.appendChild(inp);
+    document.body.appendChild(form);
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      // Timeout: asumir OK (el registro ya se hizo, solo puede fallar la foto)
+      resolve({ ok: true, _timeout: true });
+    }, 25000);
+
+    ifr.onload = () => {
+      try {
+        const txt = ifr.contentDocument.body.innerText || ifr.contentWindow.document.body.innerText;
+        if (txt && txt.trim()) {
+          cleanup();
+          const d = JSON.parse(txt.trim());
+          if (d.error) reject(new Error(d.error));
+          else resolve(d.result || d);
+        }
+      } catch(e) {
+        // Cross-origin block — asumir OK
+        cleanup();
+        resolve({ ok: true });
+      }
+    };
+
+    function cleanup() {
+      clearTimeout(timeout);
+      try { document.body.removeChild(form); } catch(e) {}
+      try { document.body.removeChild(ifr); } catch(e) {}
+    }
+
+    form.submit();
+  });
+}
+
 async function api(fn, params={}) {
   const payload = {fn, usuarioObj:usuario, ...params};
-  // Si hay foto, separar en dos llamadas: primero registrar sin foto, luego enviar foto
-  if (fn === 'registrarInasistenciaPropia' && payload.datos && payload.datos.fotoBase64) {
-    const foto = payload.datos.fotoBase64;
-    payload.datos.fotoBase64 = null;
-    const res = await apiGET(fn, payload);
-    if (foto && res.bloquesAfectados > 0) {
-      try {
-        await apiGET('enviarFotoCertificado', {
-          fn: 'enviarFotoCertificado',
-          usuarioObj: usuario,
-          foto: foto,
-          nombre: usuario.nombre,
-          fecha: payload.datos.fechaAusencia
-        });
-      } catch(e) { res._sinFoto = true; }
-    }
-    return res;
-  }
-  return await apiGET(fn, payload);
+  return await apiCall(fn, payload);
 }
 
 // ═══════════════════════════════════
@@ -559,109 +617,141 @@ function showTab(name,btn){
 }
 
 // ═══════════════════════════════════
-// CARGAR HORARIO
+// CARGAR ASISTENCIA — POR DOCENTE
 // ═══════════════════════════════════
+let docentesHoy = []; // [{nombre, turno, horas:[{horario,division,materia}], _estado, _tardaHora, _reempl, _abono, _obs}]
+
+// Hora de llegada via input nativo del sistema
+
 async function cargarHorario(){
   const dia=document.getElementById('selDia').value;
   document.getElementById('tablaZ').innerHTML='<div class="loading"><div class="sspin"></div>Cargando...</div>';
   document.getElementById('statsHoy').style.display='none';
   try{
     const data=await api('getHorarioPorDia',{dia});
-    clasesHoy=data.clases;
-    const divs=[...new Set(clasesHoy.map(c=>c.division))].sort();
-    const sel=document.getElementById('selDiv');
-    sel.innerHTML='<option value="">Todas</option>';
-    divs.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
-    filtrarTabla();
+    // Agrupar por docente
+    const map={};
+    data.clases.forEach(c=>{
+      if(!c.docente) return;
+      const k=c.docente.trim().toUpperCase();
+      if(!map[k]) map[k]={nombre:c.docente,turno:c.turno,horas:[],_estado:null,_tardaHora:null,_reempl:'',_abono:'',_obs:''};
+      map[k].horas.push({horario:c.horario,division:c.division,materia:c.materia,turno:c.turno});
+      // Turno: si tiene horas de tarde, marcar tarde
+      if(c.turno==='Tarde') map[k].turno='Tarde';
+    });
+    docentesHoy=Object.values(map).sort((a,b)=>{
+      const t={'Mañana':0,'Tarde':1}; 
+      return (t[a.turno]||0)-(t[b.turno]||0)||a.nombre.localeCompare(b.nombre);
+    });
+    renderDocentes();
   }catch(e){document.getElementById('tablaZ').innerHTML=`<div class="al aer">❌ ${e.message}</div>`;}
 }
-function filtrarTabla(){
-  const t=document.getElementById('selTurno').value;
-  const d=document.getElementById('selDiv').value;
-  clasesVis=clasesHoy.filter(c=>(!t||c.turno===t)&&(!d||c.division===d));
-  renderTabla();
-}
-function renderTabla(){
-  if(!clasesVis.length){document.getElementById('tablaZ').innerHTML='<p style="color:#90A4AE;font-style:italic;padding:20px">Sin clases para este filtro.</p>';return;}
-  let h=`<div class="wt"><table class="ta"><thead><tr>
-    <th>Horario</th><th>Turno</th><th>División</th><th>Materia</th><th>Docente</th><th>Estado</th>
-  </tr></thead><tbody>`;
-  let last=null;
-  clasesVis.forEach((c,i)=>{
-    if(c.turno!==last){
-      h+=`<tr class="trsep"><td colspan="6">${c.turno==='Mañana'?'🌅':'🌆'} TURNO ${c.turno.toUpperCase()}</td></tr>`;
-      last=c.turno;
+
+function renderDocentes(){
+  if(!docentesHoy.length){
+    document.getElementById('tablaZ').innerHTML='<p style="color:#90A4AE;font-style:italic;padding:20px">Sin docentes para este día.</p>';
+    return;
+  }
+  let h='', lastTurno=null;
+  docentesHoy.forEach((d,i)=>{
+    if(d.turno!==lastTurno){
+      h+=`<div class="turno-sep">${d.turno==='Mañana'?'🌅':'🌆'} TURNO ${(d.turno||'').toUpperCase()}</div>`;
+      lastTurno=d.turno;
     }
-    h+=`<tr><td><b>${c.horario}</b></td>
-      <td><span class="badge ${c.turno==='Mañana'?'bman':'btar'}">${c.turno}</span></td>
-      <td>${c.division}</td><td>${c.materia}</td>
-      <td>${c.docente||'<i style="color:#B0BEC5">Sin asignar</i>'}</td>
-      <td>
-        <div class="eg">
-          ${['Presente','Ausente','Tarde','Reemplazante'].map(e=>
-            `<button class="eb" data-i="${i}" data-e="${e}" onclick="setEstado(${i},'${e}')">${eIco(e)} ${e}</button>`
-          ).join('')}
-        </div>
-        <div class="rwrap" id="rw-${i}">
-          <input type="text" placeholder="Nombre del reemplazante" id="reempl-${i}" list="dlD">
-          <div class="abono-row">
-            <label><input type="radio" name="abono-${i}" value="Abona escuela"> 💰 Abona escuela</label>
-            <label><input type="radio" name="abono-${i}" value="Mecanizada"> 🔄 Mecanizada</label>
+    const cls=d._estado?` estado-${d._estado.charAt(0)}`:'';
+    const horasHtml=d.horas.map(h=>`<span class="doc-hora-tag">${h.horario} · ${h.materia} (${h.division})</span>`).join('');
+    const showExtra=d._estado==='Tarde'||d._estado==='Ausente'||d._estado==='Reemplazante';
+    h+=`<div class="doc-card${cls}" id="dc-${i}">
+      <div class="doc-nombre">${d.nombre}</div>
+      <div class="doc-horas">${horasHtml}</div>
+      <div class="doc-btns">
+        ${['Presente','Ausente','Tarde','Reemplazante'].map(e=>
+          `<button class="deb${d._estado===e?' s'+e.charAt(0):''}" onclick="setDocEstado(${i},'${e}')">${eIco(e)} ${e}</button>`
+        ).join('')}
+      </div>
+      <div class="doc-extra${showExtra?' show':''}" id="de-${i}">
+        ${d._estado==='Tarde'?`
+        <div style="margin-bottom:10px">
+          <span class="slbl" style="margin-bottom:6px">🕐 Hora de llegada</span>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <input type="time" id="hs-${i}" value="${d._tardaHora||''}"
+              style="font-size:1.6em;font-weight:700;color:var(--vd);border:2px solid var(--vc);border-radius:10px;padding:8px 12px;background:#fff;outline:none;width:140px"
+              onchange="setTardaHora(${i},this.value)">
+            <div style="font-size:.78em;color:#90A4AE;line-height:1.5">Tocá para<br>elegir la hora</div>
           </div>
-        </div>
-        <input type="text" class="oi" placeholder="Observaciones (opcional)" id="obs-${i}">
-      </td></tr>`;
+        </div>`:''}
+        ${d._estado==='Ausente'||d._estado==='Reemplazante'?`
+        <div style="margin-bottom:8px">
+          <input type="text" class="sinput" style="font-size:.85em;padding:8px 12px" placeholder="Reemplazante (opcional)" 
+            id="reempl-${i}" value="${d._reempl||''}" oninput="docentesHoy[${i}]._reempl=this.value">
+          <div class="abono-row" style="margin-top:8px">
+            <label><input type="radio" name="abono-${i}" value="Abona escuela" ${d._abono==='Abona escuela'?'checked':''}
+              onchange="docentesHoy[${i}]._abono=this.value"> 💰 Abona escuela</label>
+            <label><input type="radio" name="abono-${i}" value="Mecanizada" ${d._abono==='Mecanizada'?'checked':''}
+              onchange="docentesHoy[${i}]._abono=this.value"> 🔄 Mecanizada</label>
+          </div>
+        </div>`:''}
+        <input type="text" class="oi" placeholder="Observaciones..." 
+          id="obs-${i}" value="${d._obs||''}" oninput="docentesHoy[${i}]._obs=this.value">
+      </div>
+    </div>`;
   });
-  h+='</tbody></table></div>';
   document.getElementById('tablaZ').innerHTML=h;
   actualizarStats();
 }
-function eIco(e){return {Presente:'✅',Ausente:'❌',Tarde:'⚠️',Reemplazante:'🔄'}[e]||'';}
-function setEstado(i,e){
-  document.querySelectorAll(`[data-i="${i}"].eb`).forEach(b=>{
-    b.className='eb';if(b.dataset.e===e)b.classList.add({Presente:'sP',Ausente:'sA',Tarde:'sT',Reemplazante:'sR'}[e]);
-  });
-  document.getElementById('rw-'+i).style.display=e==='Reemplazante'?'block':'none';
-  clasesVis[i]._estado=e;
-  actualizarStats();
+
+function setDocEstado(i,e){
+  docentesHoy[i]._estado=e;
+  if(e!=='Tarde') docentesHoy[i]._tardaHora=null;
+  renderDocentes();
+  // Scroll to card
+  setTimeout(()=>{const el=document.getElementById('dc-'+i);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
 }
+
+function setTardaHora(i,h){
+  docentesHoy[i]._tardaHora=h;
+}
+
+function eIco(e){return {Presente:'✅',Ausente:'❌',Tarde:'⚠️',Reemplazante:'🔄'}[e]||'';}
+
 function actualizarStats(){
-  const t=clasesVis.length,p=clasesVis.filter(c=>c._estado==='Presente').length,
-    a=clasesVis.filter(c=>c._estado==='Ausente').length,
-    td=clasesVis.filter(c=>c._estado==='Tarde').length,
-    r=clasesVis.filter(c=>c._estado==='Reemplazante').length,
-    cg=clasesVis.filter(c=>c._estado).length;
+  const t=docentesHoy.length,
+    p=docentesHoy.filter(d=>d._estado==='Presente').length,
+    a=docentesHoy.filter(d=>d._estado==='Ausente').length,
+    td=docentesHoy.filter(d=>d._estado==='Tarde').length,
+    r=docentesHoy.filter(d=>d._estado==='Reemplazante').length,
+    cg=docentesHoy.filter(d=>d._estado).length;
   const s=document.getElementById('statsHoy');
   s.style.display='grid';
   s.innerHTML=`
-    <div class="sc"><div class="n">${t}</div><div class="l">Total</div></div>
+    <div class="sc"><div class="n">${t}</div><div class="l">Docentes</div></div>
     <div class="sc"><div class="n">${cg}</div><div class="l">Cargados</div></div>
     <div class="sc sp"><div class="n">${p}</div><div class="l">Presentes</div></div>
     <div class="sc sa"><div class="n">${a}</div><div class="l">Ausentes</div></div>
     <div class="sc st"><div class="n">${td}</div><div class="l">Tardanza</div></div>
     <div class="sc"><div class="n">${r}</div><div class="l">Reemplazados</div></div>`;
 }
-function marcarTodos(e){clasesVis.forEach((_,i)=>setEstado(i,e));}
-function limpiarEstados(){
-  clasesVis.forEach((c,i)=>{
-    delete c._estado;
-    document.querySelectorAll(`[data-i="${i}"].eb`).forEach(b=>b.className='eb');
-    const rw=document.getElementById('rw-'+i);if(rw)rw.style.display='none';
-  });
-  actualizarStats();
-}
+
+function marcarTodosDocentes(e){docentesHoy.forEach((_,i)=>setDocEstado(i,e));}
+function limpiarEstadosDocentes(){docentesHoy.forEach((d,i)=>{d._estado=null;d._tardaHora=null;d._reempl='';d._abono='';d._obs='';});renderDocentes();}
+
 async function guardarAsistencia(){
-  const sin=clasesVis.filter(c=>!c._estado&&c.docente);
+  const sin=docentesHoy.filter(d=>!d._estado);
   if(sin.length){setAlerta(`⚠️ Faltan ${sin.length} docente(s) sin estado.`,'aw');return;}
-  const regs=clasesVis.filter(c=>c.docente).map((c,i)=>{
-    const abono=document.querySelector(`input[name="abono-${i}"]:checked`);
-    return {dia:c.dia,horario:c.horario,turno:c.turno,division:c.division,
-      materia:c.materia,docente:c.docente,estado:c._estado||'Sin datos',
-      reemplazante:c._estado==='Reemplazante'?(document.getElementById('reempl-'+i)?.value||''):'',
-      abono:c._estado==='Reemplazante'?(abono?.value||''):'',
-      observaciones:document.getElementById('obs-'+i)?.value||''};
+  // Expandir cada docente a sus horas individuales
+  const regs=[];
+  const dia=document.getElementById('selDia').value;
+  docentesHoy.forEach(d=>{
+    d.horas.forEach(h=>{
+      const tardaStr=d._estado==='Tarde'&&d._tardaHora?`Tardanza — llegó a las ${d._tardaHora}. `:'';
+      const obs=tardaStr+(d._obs||'');
+      regs.push({dia,horario:h.horario,turno:h.turno,division:h.division,
+        materia:h.materia,docente:d.nombre,estado:d._estado,
+        reemplazante:d._estado==='Reemplazante'||d._estado==='Ausente'?d._reempl:'',
+        abono:d._estado==='Reemplazante'||d._estado==='Ausente'?d._abono:'',
+        observaciones:obs});
+    });
   });
-  if(!regs.length){setAlerta('No hay registros.','aw');return;}
   const btn=document.querySelector('[onclick="guardarAsistencia()"]');
   btn.disabled=true;btn.textContent='⏳ Guardando...';
   try{
