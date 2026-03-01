@@ -456,12 +456,9 @@ const ROLES_CARGA=['Preceptor','Director','Vicedirectora','Secretario','Represen
 // ═══════════════════════════════════
 // API — usa GET para evitar CORS
 // ═══════════════════════════════════
-async function apiCall(fn, payload) {
+async function api(fn, params={}) {
+  const payload = {fn, usuarioObj:usuario, ...params};
   const jsonStr = JSON.stringify(payload);
-  // Si el payload es grande (foto), usar POST via form trick
-  if (jsonStr.length > 4000) {
-    return await apiPOST(fn, payload);
-  }
   const url = APPS_SCRIPT_URL+'?fn='+encodeURIComponent(fn)+'&data='+encodeURIComponent(jsonStr);
   const res  = await fetch(url, {redirect:'follow'});
   const text = await res.text();
@@ -470,68 +467,6 @@ async function apiCall(fn, payload) {
   catch(e) { throw new Error('Error de conexion. Intenta de nuevo.'); }
   if (data.error) throw new Error(data.error);
   return data.result;
-}
-
-// POST via no-cors + polling (para payloads grandes como fotos)
-function apiPOST(fn, payload) {
-  return new Promise((resolve, reject) => {
-    const formId = 'pf_'+Date.now();
-    const ifrId  = 'pi_'+Date.now();
-
-    const ifr = document.createElement('iframe');
-    ifr.name = ifrId;
-    ifr.style.cssText = 'display:none;position:absolute;width:0;height:0';
-    document.body.appendChild(ifr);
-
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = APPS_SCRIPT_URL;
-    form.target = ifrId;
-    form.style.display = 'none';
-    form.id = formId;
-
-    const inp = document.createElement('input');
-    inp.type = 'hidden';
-    inp.name = 'payload';
-    inp.value = JSON.stringify(payload);
-    form.appendChild(inp);
-    document.body.appendChild(form);
-
-    const timeout = setTimeout(() => {
-      cleanup();
-      // Timeout: asumir OK (el registro ya se hizo, solo puede fallar la foto)
-      resolve({ ok: true, _timeout: true });
-    }, 25000);
-
-    ifr.onload = () => {
-      try {
-        const txt = ifr.contentDocument.body.innerText || ifr.contentWindow.document.body.innerText;
-        if (txt && txt.trim()) {
-          cleanup();
-          const d = JSON.parse(txt.trim());
-          if (d.error) reject(new Error(d.error));
-          else resolve(d.result || d);
-        }
-      } catch(e) {
-        // Cross-origin block — asumir OK
-        cleanup();
-        resolve({ ok: true });
-      }
-    };
-
-    function cleanup() {
-      clearTimeout(timeout);
-      try { document.body.removeChild(form); } catch(e) {}
-      try { document.body.removeChild(ifr); } catch(e) {}
-    }
-
-    form.submit();
-  });
-}
-
-async function api(fn, params={}) {
-  const payload = {fn, usuarioObj:usuario, ...params};
-  return await apiCall(fn, payload);
 }
 
 // ═══════════════════════════════════
