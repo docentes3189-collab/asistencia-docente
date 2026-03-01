@@ -470,22 +470,6 @@ async function api(fn, params={}) {
   return data.result;
 }
 
-async function apiPOST(fn, params={}) {
-  const payload = {fn, usuarioObj:usuario, ...params};
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload),
-    redirect: 'follow'
-  });
-  const text = await res.text();
-  let data;
-  try { data=JSON.parse(text); }
-  catch(e) { throw new Error('Error POST: '+e.message); }
-  if (data.error) throw new Error(data.error);
-  return data.result;
-}
-
 // ═══════════════════════════════════
 // INIT
 // ═══════════════════════════════════
@@ -756,14 +740,14 @@ function previsualizarFoto(input){
     // Comprimir a max 400px y calidad 35% para que quepa en la URL
     const img=new Image();
     img.onload=()=>{
-      const MAX=400;
+      const MAX=200;
       let w=img.width, h=img.height;
       if(w>h){ if(w>MAX){h=Math.round(h*MAX/w);w=MAX;} }
       else    { if(h>MAX){w=Math.round(w*MAX/h);h=MAX;} }
       const canvas=document.createElement('canvas');
       canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      const compressed=canvas.toDataURL('image/jpeg',0.35);
+      const compressed=canvas.toDataURL('image/jpeg',0.25);
       document.getElementById('fotoImg').src=compressed;
       document.getElementById('fotoPreview').style.display='block';
       wFotoBase64=compressed;
@@ -865,15 +849,7 @@ async function confirmarAusencia(){
       } else { throw e1; }
     }
     goStep(4);
-    // Enviar foto via POST (sin limite de tamaño de URL)
-    if (wFotoBase64) {
-      try {
-        await apiPOST('guardarFotoCertificado', {
-          ausenciaId: String(Date.now()),
-          foto: wFotoBase64
-        });
-      } catch(ef) { console.log('Foto error:', ef.message); }
-    }
+    // Foto ya incluida en el registro principal (comprimida a <3KB)
     document.getElementById('wExitoMsg').innerHTML=
       `Tu inasistencia del <strong>${fechaStr}</strong> fue registrada.<br>
        <strong>${res.bloquesAfectados} bloque(s)</strong> marcados como ausente.<br><br>
