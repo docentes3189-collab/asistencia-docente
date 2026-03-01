@@ -470,6 +470,22 @@ async function api(fn, params={}) {
   return data.result;
 }
 
+async function apiPOST(fn, params={}) {
+  const payload = {fn, usuarioObj:usuario, ...params};
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  });
+  const text = await res.text();
+  let data;
+  try { data=JSON.parse(text); }
+  catch(e) { throw new Error('Error POST: '+e.message); }
+  if (data.error) throw new Error(data.error);
+  return data.result;
+}
+
 // ═══════════════════════════════════
 // INIT
 // ═══════════════════════════════════
@@ -849,14 +865,14 @@ async function confirmarAusencia(){
       } else { throw e1; }
     }
     goStep(4);
-    // Enviar foto en llamada separada (ya comprimida a ~5KB)
+    // Enviar foto via POST (sin limite de tamaño de URL)
     if (wFotoBase64) {
       try {
-        await api('guardarFotoCertificado', {
+        await apiPOST('guardarFotoCertificado', {
           ausenciaId: String(Date.now()),
           foto: wFotoBase64
         });
-      } catch(ef) { console.log('Foto:', ef.message); }
+      } catch(ef) { console.log('Foto error:', ef.message); }
     }
     document.getElementById('wExitoMsg').innerHTML=
       `Tu inasistencia del <strong>${fechaStr}</strong> fue registrada.<br>
