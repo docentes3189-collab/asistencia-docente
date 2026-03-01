@@ -877,7 +877,7 @@ async function confirmarAusencia(){
     document.getElementById('wExitoMsg').innerHTML=
       `Tu inasistencia del <strong>${fechaStr}</strong> fue registrada.<br>
        <strong>${res.bloquesAfectados} bloque(s)</strong> marcados como ausente.<br><br>
-       📧 Se envió aviso a <em>secundaria@colegioperitomoreno.com.ar</em>${avisoFoto}`;
+       📧 Se envió aviso a <em>secundaria@colegioperitomoreno.com.ar</em>`;
     const certMsg=wCert===false?'<strong>Recordá presentar el certificado en las 48 horas.</strong>':wCert===true?'No olvidés entregarlo en Secretaría.':'';
     const ce=document.getElementById('wExitoCert');
     if(certMsg){ce.innerHTML='📋 '+certMsg;ce.style.display='flex';}
