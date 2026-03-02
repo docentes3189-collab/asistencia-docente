@@ -742,36 +742,27 @@ function previsualizarFoto(input){
     img.onload=()=>{
       // Comprimir iterativamente hasta que quepa en la URL (<4500 chars base64)
       let w=img.width, h=img.height;
-      let compressed, quality=0.7, maxPx=800;
-      // Reducir dimensiones
-      if(w>h){ if(w>maxPx){h=Math.round(h*maxPx/w);w=maxPx;} }
-      else   { if(h>maxPx){w=Math.round(w*maxPx/h);h=maxPx;} }
+      // Comprimir agresivamente: max 150px, calidad 20% — garantiza <2000 chars
+      const MAX=150;
+      let w2=img.width, h2=img.height;
+      if(w2>h2){ if(w2>MAX){h2=Math.round(h2*MAX/w2);w2=MAX;} }
+      else     { if(h2>MAX){w2=Math.round(w2*MAX/h2);h2=MAX;} }
       const canvas=document.createElement('canvas');
-      canvas.width=w; canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      // Bajar calidad hasta que base64 < 4500 chars
-      do {
-        compressed=canvas.toDataURL('image/jpeg', quality);
-        quality -= 0.05;
-      } while(compressed.length > 4500 && quality > 0.1);
-      // Si aún es grande, reducir dimensiones también
-      if(compressed.length > 4500) {
-        let scale=0.8;
-        while(compressed.length > 4500 && scale > 0.2) {
-          const c2=document.createElement('canvas');
-          c2.width=Math.round(w*scale); c2.height=Math.round(h*scale);
-          c2.getContext('2d').drawImage(img,0,0,c2.width,c2.height);
-          compressed=c2.toDataURL('image/jpeg',0.5);
-          scale-=0.1;
-        }
+      canvas.width=w2; canvas.height=h2;
+      canvas.getContext('2d').drawImage(img,0,0,w2,h2);
+      let compressed=canvas.toDataURL('image/jpeg',0.20);
+      // Si aun es muy grande bajar mas
+      let q=0.15;
+      while(compressed.length > 2000 && q > 0.05) {
+        compressed=canvas.toDataURL('image/jpeg', q);
+        q-=0.02;
       }
       document.getElementById('fotoImg').src=compressed;
       document.getElementById('fotoPreview').style.display='block';
       wFotoBase64=compressed;
       // Mostrar tamaño
       const kb=Math.round(compressed.length*0.75/1024);
-      const pct=Math.round(quality*100+5);
-      document.getElementById('fotoSize').textContent=`📎 Foto lista (${kb} KB · calidad ${pct}%)`;
+      document.getElementById('fotoSize').textContent=`📎 Foto lista (${kb} KB)`;
     };
     img.src=e.target.result;
   };
@@ -856,8 +847,8 @@ async function confirmarAusencia(){
                 fotoBase64:wFotoBase64}
       });
     } catch(e1) {
-      if (wFotoBase64 && e1.message.includes('conexión')) {
-        // Reintentar sin foto
+      if (wFotoBase64) {
+        // URL muy larga por la foto — reintentar sin foto
         res=await api('registrarInasistenciaPropia',{
           datos:{fechaAusencia:fechaStr,motivo:wMotivo,tieneCertificado:wCert,
                   observaciones:document.getElementById('wObs').value,
