@@ -186,7 +186,8 @@ header{background:linear-gradient(90deg,var(--vd),var(--vm));color:#fff;padding:
 </head>
 <body>
 
-<script>const APPS_SCRIPT_URL='https://script.google.com/a/macros/cpmcatan.edu.ar/s/AKfycbwtUKwzp_XLYIg-o0GWUfxg4UOeM_hggEh3MmFAgFESSjUs7k8wgeUejRTooytmA5Gc/exec';</script>
+<script>const WORKER_URL='https://certificados-cpm.docentes3189.workers.dev';
+const APPS_SCRIPT_URL='https://script.google.com/a/macros/cpmcatan.edu.ar/s/AKfycbwtUKwzp_XLYIg-o0GWUfxg4UOeM_hggEh3MmFAgFESSjUs7k8wgeUejRTooytmA5Gc/exec';</script>
 
 <!-- PORTADA -->
 <div id="portada">
@@ -838,25 +839,31 @@ async function confirmarAusencia(){
   const btn=document.getElementById('btnConfirmar');
   btn.disabled=true;btn.textContent='⏳ Enviando...';
   try{
-    // Intentar con foto primero; si falla por tamaño, registrar sin foto
+    // Subir foto al Worker primero si existe
+    let linkCertificado = null;
+    if (wFotoBase64) {
+      try {
+        btn.textContent='⏳ Subiendo foto...';
+        const respWorker = await fetch(WORKER_URL, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ fotoBase64:wFotoBase64, nombre:usuario.nombre, fecha:fechaStr })
+        });
+        const dataWorker = await respWorker.json();
+        if (dataWorker.result && dataWorker.result.link) linkCertificado = dataWorker.result.link;
+        btn.textContent='⏳ Registrando...';
+      } catch(ef) {
+        console.log('Worker error:', ef.message);
+      }
+    }
     let res;
     try {
       res=await api('registrarInasistenciaPropia',{
         datos:{fechaAusencia:fechaStr,motivo:wMotivo,tieneCertificado:wCert,
                 observaciones:document.getElementById('wObs').value,
-                fotoBase64:wFotoBase64}
+                linkCertificado:linkCertificado}
       });
-    } catch(e1) {
-      if (wFotoBase64) {
-        // URL muy larga por la foto — reintentar sin foto
-        res=await api('registrarInasistenciaPropia',{
-          datos:{fechaAusencia:fechaStr,motivo:wMotivo,tieneCertificado:wCert,
-                  observaciones:document.getElementById('wObs').value,
-                  fotoBase64:null}
-        });
-        res._sinFoto=true;
-      } else { throw e1; }
-    }
+    } catch(e1) { throw e1; }
     goStep(4);
     // Foto ya incluida en el registro principal (comprimida a <3KB)
     document.getElementById('wExitoMsg').innerHTML=
